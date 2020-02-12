@@ -1,0 +1,53 @@
+using Test
+using Plots
+using Interact
+#
+r1(x, y, x0, y0, sp) = sqrt(sp.h^2 + (x - x0)^2 + (y - y0)^2)
+r2(x, y, i, sp) = r1(
+    x,
+    y,
+    0.5 * sp.a + sp.R * sin((i - 1) * (2π / sp.N)),
+    0.5 * sp.b - sp.R * cos((i - 1) * (2π / sp.N)),
+    sp,
+)
+cosα(x, y, i, sp) = sp.h / r2(x, y, i, sp)
+#
+O(x, y, i, sp) = sp.I / r2(x, y, i, sp)^2 * cosα(x, y, i, sp)
+Otot(x, y, sp) = sum(O(x, y, i, sp) for i = 1:sp.N)
+#
+#
+#
+setup = (
+    a = 5.0,
+    b = 4.0,
+    h = 3,
+    R = 1.0, # meters
+    N = 5, # amount
+    I = 95.0,
+) # kd
+#
+@test r1(0, 0, 0, 0, setup) ≈ setup.h
+@test r1(0, 0, setup.a, setup.b, setup) ≈ sqrt(setup.h^2 + setup.a^2 +
+                                               setup.b^2)
+#
+
+# static
+let
+    xv = range(0, setup.a, length = 100)
+    yv = range(0, setup.b, length = 100)
+    Ov = [Otot(x, y, setup) for y in yv, x in xv]
+    heatmap(xv, yv, Ov, c = :viridis)
+end
+
+# dynamic
+@manipulate for I in range(50, 500, length = 451)
+    @manipulate for N in range(2, 8, length = 7)
+        @manipulate for R in range(0.01, 2, length = 200)
+            setup = (a = 5.0, b = 4.0)
+            xv = range(0, setup.a, length = 100)
+            yv = range(0, setup.b, length = 100)
+            Ov = [Otot(x, y, (a = 5.0, b = 4.0, h = 3.0, R = R, N = N, I = I)) for y in yv, x in xv]
+            heatmap(xv, yv, Ov, clim = (0, 150), c = :viridis)
+        end
+    end
+end
